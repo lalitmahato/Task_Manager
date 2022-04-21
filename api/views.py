@@ -39,17 +39,21 @@ def api_overview(request):
 # Register API
 class RegisterAPI(generics.GenericAPIView):
     serializer_class = RegisterSerializer
-
+    permission_classes = (IsAuthenticated,)
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        auth_token = Token.objects.get(user=user)
-        data_responce = {
-            'data': UserSerializer(user, context=self.get_serializer_context()).data,
-            'token': auth_token.key
-        }
-        return Response(data_responce)
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role == 'Supervisor':
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save()
+            auth_token = Token.objects.get(user=user)
+            data_responce = {
+                'data': UserSerializer(user, context=self.get_serializer_context()).data,
+                'token': auth_token.key
+            }
+            return Response(data_responce)
+        else:
+            return Response({'Error': 'You are not allow to see, Only supervisor can see this.'})
 
 
 class User_List(APIView):
